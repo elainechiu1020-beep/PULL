@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>流光行記抽盒模擬器</title>
+<style>
+    body {
+        font-family: "Microsoft JhengHei", sans-serif;
+        background: #1a1a2e;
+        color: #fff;
+        text-align: center;
+        padding: 20px;
+    }
+    h1 { color: #ffd369; }
+
+    button {
+        margin: 5px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        background: #ff6b81;
+        color: white;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover { background: #ff4757; }
+
+    .box {
+        margin-top: 20px;
+        padding: 15px;
+        background: #16213e;
+        border-radius: 10px;
+        text-align: left;
+        white-space: pre-wrap;
+    }
+</style>
+</head>
+<body>
+
+<h1>✨ 流光行記抽盒模擬器 ✨</h1>
+
+<div>
+    <button onclick="retailDraw(2)">2包</button>
+    <button onclick="retailDraw(4)">4包</button>
+    <button onclick="retailDraw(6)">6包</button>
+    <button onclick="boxDraw()">1盒</button>
+    <button onclick="resetAll()">重置</button>
+</div>
+
+<div class="box" id="output"></div>
+
+<script>
+let totalCost = 0;
+let totalCards = 0;
+
+function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function code(rarity) {
+    const range = {
+        UR: [1,22],
+        SSR: [1,22],
+        SR: [1,60],
+        R: [1,76],
+        N: [1,97]
+    };
+    let num = rand(...range[rarity]).toString().padStart(3,"0");
+    return `YS-LGXJ-${rarity}-${num}`;
+}
+
+function drawCard() {
+    if (rand(1,280) === 1) return "UR";
+    if (rand(1,93) === 1) return "SSR";
+
+    let r = Math.random();
+    if (r < 0.2) return "SR";
+    if (r < 0.5) return "R";
+    return "N";
+}
+
+function drawPack(isSR) {
+    let count = isSR ? 3 : 4;
+    let pack = [];
+    for (let i=0;i<count;i++){
+        let r = drawCard();
+        pack.push({r, c: code(r)});
+    }
+    return pack;
+}
+
+function retailDraw(n) {
+    if (n % 2 !== 0) {
+        alert("只能抽偶數包！");
+        return;
+    }
+
+    totalCost += n * 10;
+
+    let srPack = 0, ur=0, ssr=0;
+    let text = "[流光行記抽盒紀錄 - 模式：零售]\n目前進度：獨立抽取\n---\n";
+
+    text += globalInfo();
+
+    text += "\n【本次抽取清單】\n";
+
+    for (let i=1;i<=n;i++){
+        let isSR = Math.random() < 0.111;
+        if (isSR) srPack++;
+
+        let pack = drawPack(isSR);
+        totalCards += pack.length;
+
+        let codes = pack.map(p=>{
+            if (p.r==="UR") ur++;
+            if (p.r==="SSR") ssr++;
+            return p.c;
+        });
+
+        while (codes.length<4) codes.push("無");
+
+        text += `第 ${i} 抽 (${isSR?"SR包":"常規包"})：${codes.join(", ")}\n`;
+    }
+
+    text += "\n---\n【本次機率統計】\n";
+    text += `SR 出現率：${(srPack/n*100).toFixed(2)}%\n`;
+    text += `SSR 出現率：${(ssr/n*100).toFixed(2)}%\n`;
+    text += `UR 出現率：${(ur/n*100).toFixed(2)}%\n`;
+
+    document.getElementById("output").innerText = text;
+}
+
+function boxDraw() {
+    totalCost += 180;
+
+    let packs = Array(16).fill("N").concat(Array(2).fill("SR"));
+    packs.sort(()=>Math.random()-0.5);
+
+    let ur=0, ssr=0;
+
+    let text = "[流光行記抽盒紀錄 - 模式：盒裝]\n---\n";
+    text += globalInfo();
+
+    text += "\n【本次抽取清單】\n";
+
+    packs.forEach((p,i)=>{
+        let pack = drawPack(p==="SR");
+        totalCards += pack.length;
+
+        let codes = pack.map(x=>{
+            if (x.r==="UR") ur++;
+            if (x.r==="SSR") ssr++;
+            return x.c;
+        });
+
+        while (codes.length<4) codes.push("無");
+
+        text += `第 ${i+1}/18 抽 (${p==="SR"?"SR包":"常規包"})：${codes.join(", ")}\n`;
+    });
+
+    text += "\n---\n【本次機率統計】\n";
+    text += `SR 出現率：11.11%\n`;
+    text += `SSR 出現率：${(ssr/18*100).toFixed(2)}%\n`;
+    text += `UR 出現率：${(ur/18*100).toFixed(2)}%\n`;
+
+    document.getElementById("output").innerText = text;
+}
+
+function globalInfo(){
+    let avg = totalCards ? (totalCost/totalCards).toFixed(2) : 0;
+    return `【全局數據總覽】
+全局累計花費：${totalCost} 人民幣
+全局總卡張數：${totalCards} 張
+單張平均價格：約${avg} 人民幣 / 張
+---`;
+}
+
+function resetAll(){
+    totalCost = 0;
+    totalCards = 0;
+    document.getElementById("output").innerText = "已重置";
+}
+</script>
+
+</body>
+</html>
